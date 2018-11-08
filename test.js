@@ -15,7 +15,7 @@ const json = [
   }
 ];
 
-const writeToFile = async (data = "Hello world", dir = "./test") => {
+const writeToFile = async (data, dir) => {
   const HTML = data;
   3;
   await fs.mkpath(dir); // Make sure path exists
