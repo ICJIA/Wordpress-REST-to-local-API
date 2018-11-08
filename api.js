@@ -5,7 +5,21 @@ var path = require("path");
 
 const config = {
   sitemetaUrl: "https://cjcc.icjia-api.cloud/wp-json/wp/v2/sitemeta/",
+  routesUrl: "https://cjcc.icjia-api.cloud/wp-json/wp/v2/routes/",
   localApiDirectory: "./api"
+};
+
+const routes = async function() {
+  const { data } = await axios.get(config.routesUrl);
+  await fs.mkpath(path.resolve(config.localApiDirectory));
+  await fs.writeFile(
+    path.resolve(`${config.localApiDirectory}/routes.json`),
+    JSON.stringify(data),
+    {
+      encoding: "utf8"
+    }
+  );
+  return;
 };
 
 /**
@@ -13,6 +27,16 @@ const config = {
  */
 const sitemeta = async function() {
   const { data } = await axios.get(config.sitemetaUrl);
+  await fs.mkpath(path.resolve(config.localApiDirectory));
+  await fs.writeFile(
+    path.resolve(`${config.localApiDirectory}/sitemeta.json`),
+    JSON.stringify(data),
+    {
+      encoding: "utf8"
+    }
+  );
+  console.log("Save to file: ", `${config.localApiDirectory}/sitemeta.json`);
+
   return data;
 };
 
@@ -33,10 +57,10 @@ const writeToFile = async (filePath, apiFullUrl) => {
 
 // clean directory
 rimraf.sync(path.resolve(config.localApiDirectory));
-
+routes();
 // get sitemeta, then get each post/page type
-sitemeta().then(res =>
+sitemeta().then(res => {
   res.map(r => {
     writeToFile(config.localApiDirectory + r.route, r.apiFullUrl);
-  })
-);
+  });
+});
