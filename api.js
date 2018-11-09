@@ -9,7 +9,22 @@ const config = {
   localApiDirectory: "./api"
 };
 
-const routes = async function() {
+const writeToFile = async (filePath, apiFullUrl) => {
+  const { data } = await axios.get(`${apiFullUrl}`);
+  await fs.mkpath(path.resolve(filePath)); // Make sure path exists
+
+  console.log("Save to file: ", `${filePath}/index.json`);
+  const myPath = path.resolve(`${filePath}/index.json`);
+  return await fs.writeFile(
+    path.resolve(`${filePath}/index.json`),
+    JSON.stringify(data),
+    {
+      encoding: "utf8"
+    }
+  );
+};
+
+const fetchRoutes = async function() {
   const { data } = await axios.get(config.routesUrl);
   await fs.mkpath(path.resolve(config.localApiDirectory));
   await fs.writeFile(
@@ -19,13 +34,14 @@ const routes = async function() {
       encoding: "utf8"
     }
   );
+  console.log("Save to file: ", `${config.localApiDirectory}/routes.json`);
   return;
 };
 
 /**
  * For sitemeta construction, see: https://github.com/ICJIA/cjcc-wordpress-client/blob/master/wordpress/icjia-functions.php
  */
-const sitemeta = async function() {
+const fetchSitemeta = async function() {
   const { data } = await axios.get(config.sitemetaUrl);
   await fs.mkpath(path.resolve(config.localApiDirectory));
   await fs.writeFile(
@@ -35,32 +51,25 @@ const sitemeta = async function() {
       encoding: "utf8"
     }
   );
-  console.log("Save to file: ", `${config.localApiDirectory}/sitemeta.json`);
+  console.log("Save to file: ", `${config.localApiDirectory}/index.json`);
 
   return data;
 };
 
-const writeToFile = async (filePath, apiFullUrl) => {
-  const { data } = await axios.get(`${apiFullUrl}`);
-  await fs.mkpath(path.resolve(filePath)); // Make sure path exists
-
-  console.log("Save to file: ", `${filePath}/index.json`);
-  const myPath = path.resolve(`${filePath}/index.json`);
-  await fs.writeFile(
-    path.resolve(`${filePath}/index.json`),
-    JSON.stringify(data),
-    {
-      encoding: "utf8"
-    }
-  ); // Write to file
+const resolvePromises = async function(res) {
+  await Promise.all(res);
+  return;
 };
 
-// clean directory
 rimraf.sync(path.resolve(config.localApiDirectory));
-routes();
-// get sitemeta, then get each post/page type
-sitemeta().then(res => {
-  res.map(r => {
-    writeToFile(config.localApiDirectory + r.route, r.apiFullUrl);
-  });
-});
+
+fetchRoutes();
+
+fetchSitemeta()
+  .then(
+    res =>
+      (promises = res.map(r => {
+        writeToFile(config.localApiDirectory + r.route, r.apiFullUrl);
+      }))
+  )
+  .then(promises => resolvePromises(promises));
